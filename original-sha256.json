@@ -1,0 +1,11 @@
+{
+  "background.js": "8f7d46658725fdf0baafec7aae2f9438b81f3fb8a6cded08c6b0e5ffba2b6c78",
+  "bridge.js": "0d4fd60199d70665debe1c914f83121def310dce5a622df97d9d4c42bdb3a8f3",
+  "inject.js": "4b2f28b104686c85f52fbe8bcfa2138370ce5f5ae5a45f4dc86698fa47354b92",
+  "manifest.json": "8e849ba9d85e2789533ef77512b846671574eeea2e4f4cffc5b2bcfb4a422beb",
+  "rules.json": "72aef8255a87887eb0c95449be12bbf071412f57e5730e32b7b341119dfebf84",
+  "icons\\icon128.png": "14b2831499c32165dcd223c9cedc8c735badc7301c3fc18d9bb21bba2afc83ea",
+  "icons\\icon16.png": "1abf2e13cdb647871def1f521435a9953a08e8c0916c68dc92d3f8acb602501f",
+  "icons\\icon48.png": "f5d867c4559c593d1d8a51d9e13c3fd5f112446789e2d64ab7f18130bb87b739",
+  "_metadata\\generated_indexed_rulesets\\_ruleset1": "8b1eeddd5b41cc407c13c68198508b9245984f2fe5410613f586680099fc5352"
+}

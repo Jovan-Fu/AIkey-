@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AIkey后续流程一键申请</title><link rel="stylesheet" href="dashboard.css"></head>
+<body><main>
+<header><img src="icons/icon128.png" width="80" height="80" alt="AIkey"><div><p class="eyebrow">GOOGLE CLOUD · AUTOMATION</p><h1>AIkey后续流程一键申请</h1><p>把繁琐配置，交给一次点击。</p></div><span class="badge">修复测试版 2.0</span></header>
+<section><h2>01 / 连接与结算</h2><p>先登录 Google Cloud，在目标账号的控制台页面打开本工作台，再点击连接。</p><button id="connect">连接 Google Cloud</button><span id="account"></span><label for="billing">结算账号（选定后会记住）</label><select id="billing" disabled><option value="">连接后选择</option></select><p class="note">保留原版的管理员授权与 JSON 私钥下载。创建的服务账号将拥有 roles/aiplatform.admin；后续云资源使用可能计费。</p></section>
+<section><h2>02 / 一键配置</h2><p>新建项目 → 绑定结算 → 启用 API → 服务账号与授权 → API 密钥与 JSON 私钥。</p><button id="start" class="primary" disabled>一键全自动完成</button><p id="status" role="status">等待连接</p><pre id="logs"></pre></section>
+<section id="result" hidden><h2>03 / 配置结果</h2><p id="project"></p><label for="key">API 密钥</label><input id="key" type="password" readonly autocomplete="off"><div class="actions"><button id="reveal">显示 / 隐藏</button><button id="copy">复制 API 密钥</button><button id="download">下载 JSON 私钥</button><button id="open">打开项目</button></div><p>密钥保存在扩展当前浏览器会话中。清除后仍可在 Google Cloud 管理或撤销密钥；JSON 私钥无法从 Google 再次下载。</p><button id="clear">清除本地会话中的结果和登录上下文</button></section>
+<footer>仅与 Google Cloud 接口通信 · 不向控制台页面广播凭据 · 写入超时停止，避免重复创建</footer>
+</main><script src="dashboard.js"></script></body></html>
