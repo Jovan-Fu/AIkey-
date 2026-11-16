@@ -7,7 +7,7 @@ export function trustedDashboard(sender, runtime) {
 }
 export function operationError(op) {
   if (!op || typeof op !== 'object') throw new Error('接口未返回有效操作结果');
-  if (op.error) throw new Error(op.error.message || JSON.stringify(op.error));
+  if (op.error) { const e=new Error(op.error.message || JSON.stringify(op.error)); if(op.done===true)e.rpcCode=op.error.code; throw e; }
   return op;
 }
 export function operationPath(version, name) {

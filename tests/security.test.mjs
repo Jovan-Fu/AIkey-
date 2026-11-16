@@ -18,14 +18,14 @@ test('reject forged callers, misleading origins, failed operations and malformed
 });
 
 test('full workflow, secret isolation, caller rejection and uncertain write handling',async()=>{
-  let listener,requests=[],mode='success';
+  let listener,requests=[],mode='success';const billingLinks=new Map(),serviceAccounts=new Set();
   const session={},local={};
-  const store = obj => ({setAccessLevel:async()=>{},get:async key=>({[key]:structuredClone(obj[key])}),set:async values=>{Object.assign(obj,structuredClone(values));}});
+  const store = obj => ({setAccessLevel:async()=>{},get:async key=>({[key]:structuredClone(obj[key])}),set:async values=>{Object.assign(obj,structuredClone(values));},remove:async keys=>{for(const key of keys)delete obj[key];}});
   const id='a'.repeat(32),page=`chrome-extension://${id}/dashboard.html`;
   globalThis.chrome={
     runtime:{id,getURL:p=>`chrome-extension://${id}/${p}`,onMessage:{addListener:fn=>listener=fn}},
     storage:{session:store(session),local:store(local)},
-    declarativeNetRequest:{updateSessionRules:async()=>{}},action:{onClicked:{addListener:()=>{}}},
+    declarativeNetRequest:{updateSessionRules:async()=>{}},action:{onClicked:{addListener:()=>{}},setBadgeText:async()=>{},setBadgeBackgroundColor:async()=>{},setTitle:async()=>{}},
     tabs:{query:async()=>[{id:1,url:'https://console.cloud.google.com/'}],get:async()=>({id:1,url:'https://console.cloud.google.com/'})},
     scripting:{executeScript:async()=>[{result:{cookie:'MOCK_COOKIE',keys:['AIzaSy'+'a'.repeat(33)],authUser:'0'}}]}
   };
@@ -39,17 +39,23 @@ test('full workflow, secret isolation, caller rejection and uncertain write hand
     if(mode==='timeout' && u.pathname==='/v1/projects' && opts.method==='POST') throw new Error('network lost');
     let data;
     if(u.pathname==='/v1/billingAccounts') data={billingAccounts:[{open:true,name:'billingAccounts/ABC',displayName:'Test'}]};
+    else if(u.pathname==='/v1/billingAccounts/ABC')data={name:'billingAccounts/ABC',open:true};
+    else if(u.pathname.endsWith(':testIamPermissions'))data={permissions:body.permissions};
     else if(u.pathname==='/v1/projects') data={done:true};
-    else if(u.pathname.endsWith('/billingInfo')) data={billingEnabled:true};
+    else if(u.pathname.endsWith('/billingInfo')) {if(opts.method==='PUT')billingLinks.set(u.pathname,body.billingAccountName);data={billingEnabled:billingLinks.has(u.pathname),billingAccountName:billingLinks.get(u.pathname) || ''};}
     else if(u.pathname.endsWith(':batchEnable')) data={done:true};
     else if(u.pathname.endsWith(':getIamPolicy')) data={etag:'preserve-etag',version:3,bindings:[{role:'roles/viewer',members:['user:owner@example.test'],condition:{title:'keep',expression:'true'}}]};
     else if(u.pathname.endsWith(':setIamPolicy')) {assert.equal(body.policy.etag,'preserve-etag');assert(body.policy.bindings[0].condition);data=body.policy;}
-    else if(u.pathname.endsWith('/serviceAccounts')) data={};
+    else if(u.pathname.endsWith('/serviceAccounts')) {const project=u.pathname.split('/')[3],email=body.accountId+'@'+project+'.iam.gserviceaccount.com';serviceAccounts.add(email);data={email};}
     else if(u.hostname==='iam.clients6.google.com' && u.pathname.endsWith('/keys')) {
       const email=decodeURIComponent(u.pathname.split('/serviceAccounts/')[1].split('/')[0]);
       data={privateKeyData:btoa(JSON.stringify({client_email:email,private_key:'MOCK_PRIVATE_KEY'}))};
     }
-    else if(u.hostname==='iam.clients6.google.com') data={};
+    else if(u.hostname==='iam.clients6.google.com') {
+      const email=decodeURIComponent(u.pathname.split('/serviceAccounts/')[1] || '');
+      if(!serviceAccounts.has(email))return {ok:false,status:404,json:async()=>({error:{status:'NOT_FOUND',message:'Service account not found'}})};
+      data={email};
+    }
     else if(u.hostname==='apikeys.clients6.google.com' && opts.method==='POST') data={done:true,response:{name:'projects/123/locations/global/keys/mock-key'}};
     else if(u.pathname.endsWith('/keyString')) data={keyString:'MOCK_GENERATED_KEY'};
     else if(u.hostname==='apikeys.clients6.google.com') {
@@ -72,6 +78,9 @@ test('full workflow, secret isolation, caller rejection and uncertain write hand
     let state;
     for(let i=0;i<100;i++){state=(await call({type:'STATE'})).data;if(!state.running)break;await new Promise(r=>realTimeout(r,3));}
     assert.equal(state.completed,true,state.error);assert.equal(state.apiKey,'MOCK_GENERATED_KEY');assert.match(state.json,/MOCK_PRIVATE_KEY/);
+    const firstProject=state.projectId;
+    assert.equal((await call({type:'CLAIM_AUTO_DOWNLOAD',projectId:firstProject})).data.allowed,true);
+    assert.equal((await call({type:'CLAIM_AUTO_DOWNLOAD',projectId:firstProject})).data.allowed,false);
     assert.equal(requests.filter(r=>r.url.hostname==='iam.clients6.google.com' && r.url.pathname.endsWith('/keys')).length,1);
     assert.equal((await call({type:'STATE'},{id,url:'https://console.cloud.google.com/',tab:{id:1}})).ok,false);
     mode='wrong-binding';requests=[];
@@ -82,8 +91,10 @@ test('full workflow, secret isolation, caller rejection and uncertain write hand
     mode='timeout';requests=[];
     await call({type:'START',billingAccount:'billingAccounts/ABC'});
     for(let i=0;i<100;i++){state=(await call({type:'STATE'})).data;if(!state.running)break;await new Promise(r=>realTimeout(r,3));}
-    assert.match(state.error,/未重复提交/);assert.equal(requests.length,1);assert.equal(state.completed,false);
-    await call({type:'CLEAR'});assert.equal((await call({type:'STATE'})).data.json,'');
+    assert.match(state.error,/未重复提交/);assert.equal(requests.filter(r=>r.url.pathname==='/v1/projects' && r.opts.method==='POST').length,1);assert.equal(state.completed,false);
+    assert((await call({type:'HISTORY'})).data.some(item=>item.projectId===firstProject));
+    assert.equal((await call({type:'RESTORE_RESULT',projectId:firstProject})).data.json.includes('MOCK_PRIVATE_KEY'),true);
+    await call({type:'CLEAR'});assert.equal((await call({type:'STATE'})).data.json,'');assert.equal((await call({type:'HISTORY'})).data.length,0);
     const scripts=await Promise.all(['background.js','launcher.js','dashboard.js'].map(p=>readFile(new URL('../'+p,import.meta.url),'utf8')));
     for(const code of scripts) assert(!code.includes('postMessage('));
   } finally {globalThis.fetch=realFetch;globalThis.setTimeout=realTimeout;delete globalThis.chrome;}

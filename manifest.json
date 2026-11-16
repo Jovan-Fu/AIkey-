@@ -1,10 +1,17 @@
 {
   "manifest_version": 3,
   "name": "AIkey后续流程一键申请",
-  "version": "2.0.0",
+  "version": "2.5.8",
   "minimum_chrome_version": "120",
-  "description": "在独立扩展工作台中一键创建项目、绑定结算、配置服务账号及下载密钥。",
-  "permissions": ["scripting", "storage", "clipboardWrite", "declarativeNetRequestWithHostAccess"],
+  "description": "项目配置、余额采集、最低余额保护、表格同步与配置备份。",
+  "permissions": [
+    "scripting",
+    "storage",
+    "clipboardWrite",
+    "declarativeNetRequestWithHostAccess",
+    "alarms",
+    "notifications"
+  ],
   "host_permissions": [
     "https://console.cloud.google.com/*",
     "https://cloudresourcemanager.clients6.google.com/*",
@@ -13,9 +20,45 @@
     "https://iam.clients6.google.com/*",
     "https://apikeys.clients6.google.com/*"
   ],
-  "background": {"service_worker": "background.js", "type": "module"},
-  "action": {"default_title": "AIkey后续流程一键申请", "default_icon": {"16":"icons/icon16.png","48":"icons/icon48.png","128":"icons/icon128.png"}},
-  "icons": {"16":"icons/icon16.png","48":"icons/icon48.png","128":"icons/icon128.png"},
-  "content_scripts": [{"matches":["https://console.cloud.google.com/*"],"js":["launcher.js"],"run_at":"document_idle","world":"ISOLATED"}],
-  "content_security_policy": {"extension_pages":"script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"}
+  "optional_host_permissions": [
+    "https://script.google.com/*",
+    "https://script.googleusercontent.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "AIkey后续流程一键申请",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://console.cloud.google.com/*"
+      ],
+      "js": [
+        "launcher.js",
+        "trial-parser.js",
+        "billing-page.js"
+      ],
+      "run_at": "document_idle",
+      "world": "ISOLATED",
+      "css": [
+        "upgrade-guard.css"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+  }
 }

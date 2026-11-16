@@ -1,1 +1,13 @@
-{"private":true,"type":"module","scripts":{"test":"node --test tests/security.test.mjs"}}
+{
+  "name": "aikey-extension",
+  "version": "2.5.8",
+  "private": true,
+  "type": "module",
+  "description": "AIkey Google Cloud browser extension",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}

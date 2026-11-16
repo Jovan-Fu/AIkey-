@@ -1,0 +1,31 @@
+# Local configuration exports contain the spreadsheet sync secret.
+AIkey-config*.json
+aikey-config*.json
+.env
+.env.*
+!.env.example
+credentials*.json
+service-account*.json
+*-service-account*.json
+*private_key*.json
+secrets*.json
+token.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local build and verification output.
+node_modules/
+.cache/
+output/
+outputs/
+dist/
+*.zip
+*.zip.sha256.txt
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+*修改前备份*/
+*-验证/
