@@ -30,7 +30,7 @@ test('03 minimum UI retains zero and unsaved edits; refresh, save and check neve
 });
 test('dashboard resources and import graph exist; retired panels, pricing requests and Monitoring permission are absent',async()=>{
   const html=await readFile(new URL('../dashboard.html',import.meta.url),'utf8'),manifest=JSON.parse(await readFile(new URL('../manifest.json',import.meta.url),'utf8'));
-  assert(!/token|guard-allowance|单价|报价/i.test(html));assert.equal(manifest.version,'2.5.8');assert(!JSON.stringify(manifest).includes('monitoring.clients6'));
+  assert(!/token|guard-allowance|单价|报价/i.test(html));assert.equal(manifest.version,'2.5.9');assert(!JSON.stringify(manifest).includes('monitoring.clients6'));
   const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(new Set(ids).size,ids.length);
   for(const m of html.matchAll(/(?:src|href)="([^":#]+\.(?:js|css|png))"/g))await access(new URL('../'+m[1],import.meta.url));
   const seen=new Set();async function scan(file){if(seen.has(file))return;seen.add(file);const code=await readFile(new URL('../'+file,import.meta.url),'utf8');assert(!/monitoring\.clients6|from ['"]\.\/cost-guard|from ['"]\.\/token-monitor/.test(code));for(const m of code.matchAll(/from ['"]\.\/([^'"]+)['"]/g))await scan(m[1]);}

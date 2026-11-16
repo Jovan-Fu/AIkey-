@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AIkey后续流程一键申请",
-  "version": "2.5.8",
+  "version": "2.5.9",
   "minimum_chrome_version": "120",
   "description": "项目配置、余额采集、最低余额保护、表格同步与配置备份。",
   "permissions": [

@@ -24,7 +24,7 @@
     el('trial-balance').textContent=mismatchCurrency?'旧币种金额待重新采集':unresolved?`${p.balanceObservation.amount}（币种待核实）`:p?.balance!==null && p?.balance!==undefined ? `${p.balance} ${p.currency}` : '未知';
     const amount=p?.balance,card=el('trial-balance').parentElement;if(card?.dataset)card.dataset.level=unresolved || typeof amount!=='number'?'unknown':amount<=(config.minimums?.[name] ?? 30)?'stop':amount<=50?'red':amount<=80?'yellow':amount<=100?'pale':'normal';
     const stale=p?.balanceUpdatedAt && Date.now()-p.balanceUpdatedAt>300000;
-    el('balance-source').textContent=mismatchCurrency?`Google账号币种为${config.accountCurrencies[name]}，旧${p.currency}金额未作为当前余额采用。`:typeof p?.balance!=='number'?'尚未采集到官方余额；请点“自动读取当前账号余额”':p?.balanceUpdatedAt?`${p.balanceSource} · 页面快照：${new Date(p.balanceUpdatedAt).toLocaleString()}${stale?' · 页面快照超过5分钟，请查看刷新状态':''}`:'尚未同步；不会将未知余额显示为 0';
+    el('balance-source').textContent=mismatchCurrency?`Google账号币种为${config.accountCurrencies[name]}，旧${p.currency}金额未作为当前余额采用。`:typeof p?.balance!=='number'?(p?.refreshState==='loading'?'正在等待Google余额页加载，后台将自动读取；无需手动填写金额':'尚未采集到官方余额；请点“读取当前页面余额（不关闭）”查看原因'):p?.balanceUpdatedAt?`${p.balanceSource} · 页面快照：${new Date(p.balanceUpdatedAt).toLocaleString()}${stale?' · 页面快照超过5分钟，请查看刷新状态':''}`:'尚未同步；不会将未知余额显示为 0';
     el('balance-read').textContent=typeof p?.balance==='number' && p.balanceSource!=='手动记录' ? `最近成功读取：${p.lastBalanceReadAt?new Date(p.lastBalanceReadAt).toLocaleString():'暂无记录'}；金额最近变化：${p.balanceValueChangedAt?new Date(p.balanceValueChangedAt).toLocaleString():'暂无记录'}`:'';
     if(Number.isFinite(p?.deadline)){
       const ms=Math.max(0,p.deadline-Date.now()),s=Math.floor(ms/1000);
@@ -37,7 +37,7 @@
     el('save-monitor').textContent=el('auto-close').checked?'保存并启用按日期关闭':'保存采集与日期设置（不启用余额停用）';
     el('arm-check').textContent=el('auto-close').checked && (!el('confirm-account').value.trim() || !el('confirm-scope').checked)?'尚未完成关闭授权：请输入完整账号ID并勾选影响全部项目。只填写日期不会启用关闭。':'';
     el('trial-close').textContent=p?.armed?'已授权到期辅助关闭':'未启用';
-    el('monitor-saved').textContent=dirty?'有未保存的修改：请点击“保存监控设置”后才会生效。':!p?'尚未保存此账号：勾选选项不会启动定时任务。':`采集与日期设置已保存${p.savedAt?' · '+new Date(p.savedAt).toLocaleString():''} · ${p.armed?(p.deadline>Date.now()?'等待设定的截止时间':'已到设定截止时间，请检查任务状态'):'未启用按日期关闭'}；余额停用状态请看上方提示。`;
+    el('monitor-saved').textContent=dirty?'有未保存的修改（采集/日期设置）；这不阻止只读余额采集，也不会启用余额停用。':!p?'尚未保存此账号：勾选选项不会启动定时任务。':`采集与日期设置已保存${p.savedAt?' · '+new Date(p.savedAt).toLocaleString():''} · ${p.armed?(p.deadline>Date.now()?'等待设定的截止时间':'已到设定截止时间，请检查任务状态'):'未启用按日期关闭'}；余额停用状态请看上方提示。`;
 
     el('page-agent').textContent=config.pageAgent && Date.now()-config.pageAgent.lastSeen<90000?`Google页面脚本已连接 · ${config.pageAgent.version} · ${new Date(config.pageAgent.lastSeen).toLocaleTimeString()}`:'尚未收到新版Google页面脚本：请刷新目标Google Cloud页面，再保持登录。';
     const refreshLabels={'no-page':'没有采集页','loading':'已请求重新加载，等待页面就绪','sampling':'后台正在读取','updated':'最近采集成功','manage-read':'账号管理页已采集（只读取，不刷新页面）','project-only':'只有项目横幅，未配置可刷新的概览页','closing':'此页正在关闭确认，暂不刷新','failed':'采集失败'};

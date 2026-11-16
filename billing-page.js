@@ -38,7 +38,7 @@
   }
   for(const name of ['click','auxclick'])window.addEventListener(name,block,true);
   window.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')block(e);},true);
-  async function settings(){try{guard=(await send({type:'UPGRADE_GUARD_READ'})).enabled!==false;}catch{/* keep the upgrade-button guard enabled */}applyGuard();send({type:'MONITOR_HEARTBEAT',version:'2.5.8'}).catch(()=>{});}
+  async function settings(){try{guard=(await send({type:'UPGRADE_GUARD_READ'})).enabled!==false;}catch{/* keep the upgrade-button guard enabled */}applyGuard();send({type:'MONITOR_HEARTBEAT',version:'2.5.9'}).catch(()=>{});}
   // A generic official route does not identify a billing account. Never trust
   // a query parameter as identity; require a single visible account ID.
   function pageContext(){
@@ -88,7 +88,7 @@
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
   async function closeDueAccount(){
     const context=pageContext();if(closing || context?.page!=='manage')return;
-    let ticket;try{ticket=await send({type:'CLOSE_TICKET',account:context.account,agentVersion:'2.5.8'});}catch{return;}
+    let ticket;try{ticket=await send({type:'CLOSE_TICKET',account:context.account,agentVersion:'2.5.9'});}catch{return;}
     if(!ticket.allowed || ticket.account!==context.account)return;
     closing=true;let submitted=false,note='未找到可识别的关闭账号控件，请手动处理。';
     try{

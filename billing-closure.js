@@ -79,7 +79,7 @@ export function installBillingClosure({request,withConnection,isBusy=()=>false,r
     const c=await load(),j=c.accounts[account];
     if(j && message.type!=='CLOSE_RESULT' && j.tabId!==sender.tab.id && ['opening','executing','needs-verification'].includes(j.status))return {allowed:false,reason:'同一结算账号已有另一个关闭任务，未授予重复票据'};
     if(!j || j.tabId!==sender.tab.id || !['opening','executing'].includes(j.status))return null;
-    if(message.type==='CLOSE_TICKET' && message.agentVersion!=='2.5.8')return {allowed:false,reason:'需要刷新2.5.8官方页面脚本，未授予关闭票据'};
+    if(message.type==='CLOSE_TICKET' && message.agentVersion!=='2.5.9')return {allowed:false,reason:'需要刷新2.5.9官方页面脚本，未授予关闭票据'};
     const tab=await chrome.tabs.get(j.tabId);
     if(tab.url!==sender.url || (new URL(tab.url).searchParams.get('authuser') || '0')!==j.authUser)throw Error('关闭页面网址或Google登录索引已变化');
     if(message.type==='CLOSE_RESULT'){

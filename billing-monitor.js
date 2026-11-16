@@ -58,6 +58,7 @@ export function installBillingMonitor({request,isBusy,getConnection=()=>null,ens
         }
         if(p.job && ['opening','executing'].includes(p.job.status) && p.job.tabId===tab.id)continue;
         eligible++;
+        if(tab.status==='loading'){error='Google余额页正在加载，等待页面就绪后自动重试';continue;}
         if(!chrome.scripting?.executeScript)throw new Error('浏览器未提供页面采集接口');
         const job={name,tabId:tab.id,url:tab.url,overview:route?.page==='overview',manage:route?.page==='manage'};
         await collectJob(job);
@@ -65,12 +66,15 @@ export function installBillingMonitor({request,isBusy,getConnection=()=>null,ens
         return {captured:true,account:name};
       }catch(e){error=e.message;}
     }
+    let pending=false,reason=error || '未找到目标账号的可采集页面';
     await transact(async()=>{const current=await read(),profile=current.profiles[name];
       profile.refreshState=eligible?'failed':'no-page';profile.lastRefreshCheckAt=Date.now();
       profile.syncError=error || '没有找到已打开且属于这个结算账号的采集页。请点“打开官方概览并同步”，在Google页面选择此账号后保持页面打开，再点自动读取。';
+      try{await ensureRefreshOverview(profile);}catch(e){profile.overviewRefreshError=e.message;profile.syncError+='；无法建立后台采集页：'+e.message;reason=profile.syncError;}
+      if(profile.overviewTabId && profile.refreshPendingAt){pending=true;profile.refreshState='loading';reason='已建立目标账号的后台余额页，正在等待Google加载并自动读取';profile.syncError=reason;}
       await write(current);
     });
-    return {captured:false,account:name,reason:error || '未找到目标账号的可采集页面'};
+    return {captured:false,pending,account:name,reason};
     }finally{collecting.delete(name);}
   }
   function sourceAccount(sender,message) {
@@ -181,8 +185,13 @@ export function installBillingMonitor({request,isBusy,getConnection=()=>null,ens
         if(onlyAccount && p.name!==onlyAccount || collecting.has(p.name))continue;
         if(!force && p.autoRefresh===false)continue;
         p.lastRefreshCheckAt=Date.now();
-        const id=p.overviewTabId || p.manageTabId || p.bannerTabId;
-        if(!id){p.refreshState='no-page';p.syncError='没有已识别的采集页，请打开官方概览并选择这个账号';continue;}
+        let id=p.overviewTabId || p.manageTabId || p.bannerTabId;
+        if(!id){
+          try{await ensureRefreshOverview(p,force);}catch(e){p.overviewRefreshError=e.message;}
+          id=p.overviewTabId;
+          if(!id){p.refreshState=p.overviewRefreshError?'failed':'no-page';p.syncError=p.overviewRefreshError || '尚无可用余额页；请连接目标Google账号，后台会在连接有效时自动建立采集页';continue;}
+          if(p.refreshPendingAt){p.refreshState='loading';p.syncError='正在等待Google结算页加载，后台将自动读取余额';continue;}
+        }
         try{
           const tab=await chrome.tabs.get(id),route=billingRoute(tab.url),u=new URL(tab.url);
           if(u.origin!=='https://console.cloud.google.com')throw new Error('已记录的采集标签页已切换，请重新打开概览并同步');
@@ -360,7 +369,7 @@ export function installBillingMonitor({request,isBusy,getConnection=()=>null,ens
       if(sender.id!==chrome.runtime.id || !sender.tab || sender.frameId!==0)throw new Error('拒绝无效页面心跳');
       const url=new URL(sender.url);if(url.origin!=='https://console.cloud.google.com')throw new Error('拒绝无效页面域名');
       const authUser=url.searchParams.get('authuser') || url.pathname.match(/\/u\/(\d+)\//)?.[1] || '0';
-      if(pageAgents.size>50)pageAgents.clear();pageAgents.set(sender.tab.id,{tabId:sender.tab.id,lastSeen:Date.now(),version:['2.4.0','2.4.1','2.4.2','2.4.3','2.4.4','2.5.0','2.5.1','2.5.2','2.5.3','2.5.4','2.5.5','2.5.6','2.5.7','2.5.8'].includes(message.version)?message.version:'未知版本',authUser});
+      if(pageAgents.size>50)pageAgents.clear();pageAgents.set(sender.tab.id,{tabId:sender.tab.id,lastSeen:Date.now(),version:['2.4.0','2.4.1','2.4.2','2.4.3','2.4.4','2.5.0','2.5.1','2.5.2','2.5.3','2.5.4','2.5.5','2.5.6','2.5.7','2.5.8','2.5.9'].includes(message.version)?message.version:'未知版本',authUser});
       return {accepted:true};
     }
     if(message.type==='UPGRADE_GUARD_READ') {

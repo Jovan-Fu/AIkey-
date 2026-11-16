@@ -15,7 +15,7 @@ async function fixture(run){
     throw Error('Unexpected path '+path);
   }});
   const sender=()=>{const t=[...tabs.values()].at(-1);return {id:'extension',frameId:0,tab:{id:t.id},url:t.url};};
-  const send=(type,fields={})=>controller.content({type,account,agentVersion:'2.5.8',...fields},sender());
+  const send=(type,fields={})=>controller.content({type,account,agentVersion:'2.5.9',...fields},sender());
   try{await run({controller,db,conn,calls,created,tabs,sender,send,now:()=>now,advance:ms=>now+=ms,setOpen:v=>open=v,setExtra:v=>extra=v,setBusy:v=>busy=v,setCreateFail:v=>failCreate=v,setHook:v=>hook=v});}
   finally{Date.now=realNow;delete globalThis.chrome;}
 }
@@ -29,7 +29,7 @@ test('closure uses a private exact-tab ticket, checks consent again before submi
   const oldDate=structuredClone(h.db.trialMonitor);const first=await h.controller.run(account,h.conn);assert.equal(first.status,'opening');assert(!('token' in first));assert.equal(h.created.length,1);assert.deepEqual(h.db.trialMonitor,oldDate);
   assert.equal((await h.send('CLOSE_TICKET',{agentVersion:'2.5.7'})).allowed,false);
   const ticket=await h.send('CLOSE_TICKET');assert.equal(ticket.allowed,true);assert.equal(ticket.kind,'balance');assert.equal((await h.send('CLOSE_TICKET')).allowed,false);
-  const otherTab={id:99,url:h.sender().url};h.tabs.set(99,otherTab);assert.equal((await h.controller.content({type:'CLOSE_TICKET',account,agentVersion:'2.5.8'},{id:'extension',frameId:0,tab:{id:99},url:otherTab.url})).allowed,false);h.tabs.delete(99);
+  const otherTab={id:99,url:h.sender().url};h.tabs.set(99,otherTab);assert.equal((await h.controller.content({type:'CLOSE_TICKET',account,agentVersion:'2.5.9'},{id:'extension',frameId:0,tab:{id:99},url:otherTab.url})).allowed,false);h.tabs.delete(99);
   assert.equal((await h.send('CLOSE_CONFIRM_READY',{token:'forged'})).allowed,false);assert.equal((await h.send('CLOSE_CONFIRM_READY',{token:ticket.token})).allowed,true);
   await h.send('CLOSE_RESULT',{token:ticket.token,submitted:true,note:'UI clicked'});const pending=await h.controller.run(account,h.conn);assert.equal(pending.status,'needs-verification');assert.equal(pending.accountOpen,true);assert.equal(pending.verifiedClosedAt,null);assert.equal(h.created.length,1);
   h.setOpen(false);const done=await h.controller.run(account,h.conn);assert.equal(done.status,'verified-closed');assert.equal(done.accountOpen,false);assert(done.verifiedClosedAt);assert.equal(h.created.length,1);assert.deepEqual(h.db.trialMonitor,oldDate);

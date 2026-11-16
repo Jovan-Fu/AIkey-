@@ -70,7 +70,7 @@
         const details=$('balance-guard-authorization');if(details)details.open=true;
       }else if(type==='BALANCE_GUARD_SAVE'||type==='BALANCE_GUARD_PAUSE')checked=null;
       if(type==='BALANCE_GUARD_TEST')await refresh();else render(s);
-      $('balance-guard-message').textContent=type==='BALANCE_GUARD_SAVE'?'金额已保存，但余额停用没有启用。请继续第1步检查，再完成第2步授权。':type==='BALANCE_GUARD_CHECK'?(s.fresh?'第1步完成，尚未启用。'+(s.balance<=s.threshold?'当前余额已经达到停用线，启用后会立即停用。':'')+'请核对下方项目，填写完整账号ID并勾选授权，再点击第2步。':'项目范围已检查，但余额快照过旧；先刷新余额页，再重新检查。'):type==='BALANCE_GUARD_TEST'?'只读核对完成，本次没有执行停用，也没有新增授权。':'余额保护已暂停。';
+      $('balance-guard-message').textContent=type==='BALANCE_GUARD_SAVE'?'金额已保存，但余额停用没有启用。请继续第1步检查，再完成第2步授权。':type==='BALANCE_GUARD_CHECK'?(s.fresh?'第1步完成，尚未启用。'+(s.balance<=s.threshold?'当前余额已经达到停用线，启用后会立即停用。':'')+'请核对下方项目，填写完整账号ID并勾选授权，再点击第2步。':'项目范围已检查，余额尚未就绪；'+(s.lastError || '请读取或刷新余额页查看具体原因，再重新检查。')):type==='BALANCE_GUARD_TEST'?'只读核对完成，本次没有执行停用，也没有新增授权。':'余额保护已暂停。';
     }catch(e){$('balance-guard-message').textContent=e.message;}finally{busy=false;$(id).disabled=false;enableButton();}
   });
   $('balance-guard-enable').addEventListener('click',async()=>{

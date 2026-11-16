@@ -34,7 +34,7 @@ export function installBalanceGuard({withConnection,request,captureBalance,billi
     if(readOnly){s.armed=false;s.enabled=false;}
     const context={...conn,guardAccount:account},persist=async state=>{if(!readOnly){c.accounts[account]=state;await save(c);}};
     if(!s.triggeredAt){
-      try{await captureBalance(account,conn);}catch(e){s.lastError=e.message;}
+      try{const reading=await captureBalance(account,conn);s.lastError=reading?.captured===false?reading.reason || '尚未取得有效官方余额':'';}catch(e){s.lastError=e.message;}
       Core.observe(s,await official(account,s.policy.currency),Date.now());await persist(s);
     }
     if(!readOnly && s.armed && s.triggeredAt){
@@ -81,8 +81,9 @@ export function installBalanceGuard({withConnection,request,captureBalance,billi
       }if(token)throw Error('项目列表未读取完整');
       if(m.closeBillingAccount===true && !billingClosure)throw Error('当前后台不支持结算账号联合关闭，请先重新加载整个扩展');
       const policy=await drive(Core.preflight({account,currency:metadata.currencyCode,projects,threshold,authUser:conn.authUser,fallbackDelete:m.fallbackDelete===true,closeBillingAccount:m.closeBillingAccount===true}),{...conn,guardAccount:account});
-      await captureBalance(account,conn,metadata);
+      const reading=await captureBalance(account,conn,metadata);
       const s=Core.create(policy,Date.now());Core.observe(s,await official(account,policy.currency),Date.now());s.checkId=crypto.randomUUID();
+      if(!s.fresh)s.lastError=reading?.reason || '尚未取得最近5分钟内的有效官方余额';
       c.accounts[account]=s;c.active=account;await save(c);return {...summary(s),checkId:s.checkId};
     });
     if(m.type==='BALANCE_GUARD_TEST')return exclusive(conn=>process(canonicalAccount(m.account),conn,true));
